@@ -12,8 +12,8 @@ This is simpler and more predictable than Vercel Services for this repo.
 Create a new Vercel project from this repository.
 
 Settings:
-- Root Directory: `.`
-- Framework Preset: `Other`
+- Root Directory: `backend`
+- Framework Preset: `FastAPI` if shown, otherwise `Other`
 - Build Command: leave empty/default
 - Output Directory: leave empty/default
 - Install Command: leave empty/default
@@ -22,10 +22,9 @@ Environment variables:
 - `OPENROUTER_API_KEY` = your OpenRouter key
 
 Files used:
-- `vercel.json`
-- `api/index.py`
-- `requirements.txt`
-- `backend/`
+- `backend/index.py`
+- `backend/main.py`
+- `backend/requirements.txt`
 
 After deploy, copy the backend URL, for example:
 
