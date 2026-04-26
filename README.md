@@ -32,9 +32,9 @@ Open http://localhost:3000
 
 ## Deploy on Vercel
 
-This repo is configured for a single Vercel project that serves both:
-- Frontend from `frontend/`
-- Backend API from `backend/` through root routing
+This repo is configured for two Vercel projects:
+- Backend API from the repository root
+- Frontend app from `frontend/`
 
 See [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md) for the exact setup steps and required environment variables.
 

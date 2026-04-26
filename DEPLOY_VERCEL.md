@@ -1,56 +1,96 @@
-# Deploy WARBREAK on Vercel (Single Project)
+# Deploy WARBREAK on Vercel (Two Projects)
 
-This repo is configured to deploy frontend and backend together under one Vercel URL.
+Use two separate Vercel projects:
 
-- Frontend: Next.js from `frontend/`
-- Backend: FastAPI routed from `api/index.py` (imports app from `backend/main.py`)
+- Backend API: FastAPI from the repository root, using `api/index.py`
+- Frontend app: Next.js from `frontend/`
 
-## 1) Create one Vercel project
+This is simpler and more predictable than Vercel Services for this repo.
 
-1. Import this repository in Vercel.
-2. Keep **Root Directory** as repository root (`.`).
-3. Add environment variable:
-   - `OPENROUTER_API_KEY` = your OpenRouter key
-4. Deploy.
+## 1) Backend Project
 
-Vercel files used:
-- `vercel.json` (root routing for frontend + backend)
-- `api/index.py` (ASGI entrypoint)
+Create a new Vercel project from this repository.
 
-## 2) Routing behavior
+Settings:
+- Root Directory: `.`
+- Framework Preset: `Other`
+- Build Command: leave empty/default
+- Output Directory: leave empty/default
+- Install Command: leave empty/default
 
-These paths go to FastAPI:
-- `/health`
-- `/health/startup`
-- `/games`
-- `/games/{game_id}`
-- `/turn`
-- `/autopsy/{game_id}`
+Environment variables:
+- `OPENROUTER_API_KEY` = your OpenRouter key
 
-All other paths go to Next.js frontend.
+Files used:
+- `vercel.json`
+- `api/index.py`
+- `requirements.txt`
+- `backend/`
 
-## 3) Frontend API base URL
+After deploy, copy the backend URL, for example:
 
-The frontend now defaults to same-origin API calls.
+```txt
+https://warbreak-api.vercel.app
+```
 
-- `frontend/lib/api.ts` uses `NEXT_PUBLIC_API_URL` only if provided.
-- For single-project deploy, you can leave `NEXT_PUBLIC_API_URL` unset.
+Verify:
 
-For local development, keep using:
-- `frontend/.env.local` with `NEXT_PUBLIC_API_URL=http://localhost:8000`
+```txt
+GET /health
+GET /health/startup
+POST /games
+POST /turn
+POST /intel
+GET /autopsy/{game_id}
+```
 
-## 4) Verify end-to-end
+`/health/startup` should return `openrouter_configured: true`.
 
-1. Open your Vercel URL.
-2. Submit a plan.
-3. Confirm the app can call:
-   - `POST /games`
-   - `POST /turn`
-   - `GET /autopsy/{game_id}`
-4. Confirm deployment env is valid:
-   - `GET /health/startup` should return 200
+## 2) Frontend Project
+
+Create a second Vercel project from the same repository.
+
+Settings:
+- Root Directory: `frontend`
+- Framework Preset: `Next.js`
+- Build Command: default
+- Output Directory: default
+- Install Command: default
+
+Environment variables:
+- `NEXT_PUBLIC_API_URL` = your backend project URL, with no trailing slash
+
+Example:
+
+```txt
+NEXT_PUBLIC_API_URL=https://warbreak-api.vercel.app
+```
+
+Do not set `OPENROUTER_API_KEY` on the frontend project.
+
+## 3) Local Development
+
+Backend:
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
+npm run dev
+```
 
 ## Notes
 
-- Backend state is in-memory, so sessions can reset on cold starts/redeploys.
-- If you later split services again, set `NEXT_PUBLIC_API_URL` to your backend domain.
+- Backend game state is in memory. Sessions can reset on cold starts or redeploys.
+- For a hackathon demo this is acceptable, but persistent storage should be added for production.
+- If frontend requests fail in production, confirm `NEXT_PUBLIC_API_URL` points to the backend deployment URL.

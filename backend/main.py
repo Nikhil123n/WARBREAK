@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -21,9 +22,21 @@ app.add_middleware(
 )
 
 # ── Health ────────────────────────────────────────────────────────────────────
+@app.get("/")
+def root():
+    return {"ok": True, "service": "WARBREAK API"}
+
 @app.get("/health")
 def health():
     return {"ok": True, "version": "2.0.0", "model": "meta-llama/llama-3.3-70b-instruct:free"}
+
+@app.get("/health/startup")
+def startup_health():
+    return {
+        "ok": True,
+        "openrouter_configured": bool(os.getenv("OPENROUTER_API_KEY")),
+        "runtime": "vercel" if os.getenv("VERCEL") else "local",
+    }
 
 # ── Intel Briefing (OSINT prediction) ────────────────────────────────────────
 class IntelRequest(BaseModel):

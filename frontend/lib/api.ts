@@ -1,4 +1,61 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export type AssumptionStatus = "untested" | "stressed" | "broken" | "validated";
+
+export type Assumption = {
+  id: string;
+  text: string;
+  category: string;
+  confidence: number;
+  criticality: number;
+  fragility: number;
+  basis: string;
+  doctrine_ref: string;
+  dependencies: string[];
+  cascade_effect: string;
+  status: AssumptionStatus;
+  turn_broken?: number | null;
+};
+
+export type GameEvent = {
+  turn: number;
+  title: string;
+  description: string;
+  blue_move: string;
+  red_move: string;
+  ghost_reasoning: string;
+  ghost_state_text: string;
+  targeted_assumption_id: string;
+  broken_chain: string[];
+  metric_deltas: Record<string, number>;
+  options: string[];
+};
+
+export type GameState = {
+  id: string;
+  created_at: string;
+  plan: string;
+  assumptions: Assumption[];
+  turn: number;
+  max_turns: number;
+  metrics: Record<string, number>;
+  events: GameEvent[];
+  status: "active" | "failed" | "completed";
+  ghost_loss_aversion: number;
+  ghost_escalation_threshold: number;
+};
+
+export type AutopsyReport = {
+  status: string;
+  turns: number;
+  assumptions_broken: number;
+  assumptions_stressed: number;
+  final_metrics: Record<string, number>;
+  root_causes: string[];
+  recommendation: string;
+  report: string;
+};
+
+const DEFAULT_API_BASE = process.env.NODE_ENV === "development" ? "http://localhost:8000" : "";
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_BASE).replace(/\/$/, "");
 
 async function safeJson(res: Response) {
   if (!res.ok) throw new Error(await res.text());
@@ -18,7 +75,7 @@ export async function playTurn(gameId: string, action: string) {
   const res = await fetch(`${API_BASE}/turn`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ game_id: gameId, blue_action: action, action }),
+    body: JSON.stringify({ game_id: gameId, player_action: action }),
   });
   return safeJson(res);
 }
@@ -33,7 +90,7 @@ export async function getAutopsy(gameId: string) {
   return safeJson(res);
 }
 
-export async function identifyOpponentAssets(scenario: string, selectedAssets: any[]) {
+export async function identifyOpponentAssets(scenario: string, selectedAssets: unknown[]) {
   const adversary = scenario.includes("NATO") ? "Russian forces" 
     : scenario.includes("Embassy") ? "local hostile forces" 
     : scenario.includes("Cyber") ? "state-backed cyber actor" 
@@ -42,7 +99,7 @@ export async function identifyOpponentAssets(scenario: string, selectedAssets: a
   const payload = { 
     scenario, 
     adversary, 
-    blue_assets: selectedAssets.map((a: any) => a.name || a) 
+    blue_assets: selectedAssets.map((asset: any) => asset?.name || asset) 
   };
 
   const res = await fetch(`${API_BASE}/intel`, {
